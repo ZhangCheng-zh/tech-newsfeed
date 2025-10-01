@@ -1,103 +1,144 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+const articles = [
+  {
+    id: "1",
+    title: "Global Markets Rally on Renewed Optimism",
+    snippet:
+      "Stocks across Europe and Asia surged as investors reacted to fresh economic data pointing to a resilient recovery and easing inflation pressures.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1468078809804-4c7b3e60a478?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "2",
+    title: "Cities Race to Build Climate-Ready Infrastructure",
+    snippet:
+      "Municipal leaders unveil a coordinated plan to retrofit aging transit systems while accelerating clean energy adoption in high-density neighborhoods.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1451186859696-371d9477be93?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "3",
+    title: "Breakthrough in Quantum Networking Demonstrated",
+    snippet:
+      "Researchers achieve record-breaking entanglement stability, paving the way for secure communication channels that transcend current internet limits.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "4",
+    title: "Farm-to-Table Movement Expands to Urban Centers",
+    snippet:
+      "Local growers partner with restaurants to deliver seasonal menus while reducing food miles and spotlighting regenerative agriculture practices.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "5",
+    title: "Streaming Platforms Bet on Interactive Storytelling",
+    snippet:
+      "Major studios invest in choose-your-own adventure formats after early pilots draw record engagement from younger audiences worldwide.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "6",
+    title: "Healthcare Innovators Focus on Remote Diagnostics",
+    snippet:
+      "Startups roll out AI-assisted screening tools that bring specialized care to rural communities through lightweight, connected devices.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1581091870627-3a344ec62c57?auto=format&fit=crop&w=900&q=80",
+  },
+];
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) {
+      return;
+    }
+
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let isFetching = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !isFetching) {
+          isFetching = true;
+          setLoadingMore(true);
+          timeout = setTimeout(() => {
+            setLoadingMore(false);
+            isFetching = false;
+          }, 1200);
+        }
+      },
+      { rootMargin: "0px 0px 200px 0px" }
+    );
+
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white text-slate-900">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
+          <h1 className="text-2xl font-semibold tracking-tight">NewsFeed</h1>
+          <button className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200">
+            Fresh
+          </button>
+        </nav>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
+        <section className="grid gap-6 sm:grid-cols-2">
+          {articles.map((article) => (
+            <article
+              key={article.id}
+              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              <div className="flex flex-col gap-3 p-6">
+                <h2 className="text-xl font-semibold text-slate-900">{article.title}</h2>
+                <p className="text-sm leading-relaxed text-slate-600">{article.snippet}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <div
+          ref={sentinelRef}
+          className="flex items-center justify-center gap-3 py-12 text-sm text-slate-500"
+        >
+          {loadingMore ? (
+            <>
+              <span className="h-2 w-2 animate-ping rounded-full bg-slate-400" />
+              Loading more stories…
+            </>
+          ) : (
+            <span>Keep scrolling to discover more stories</span>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
