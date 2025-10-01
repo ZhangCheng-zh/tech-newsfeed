@@ -3,8 +3,19 @@ import { fetchLatestArticles } from "@/lib/fetch-articles";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const articles = await fetchLatestArticles();
+const INITIAL_LIMIT = 12;
 
-  return <NewsFeedClient articles={articles} />;
+export default async function Home() {
+  const { articles, hasMore } = await fetchLatestArticles({
+    limit: INITIAL_LIMIT,
+    offset: 0,
+  });
+
+  return (
+    <NewsFeedClient
+      initialArticles={articles}
+      initialHasMore={hasMore}
+      pageSize={INITIAL_LIMIT}
+    />
+  );
 }

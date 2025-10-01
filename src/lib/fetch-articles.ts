@@ -21,10 +21,21 @@ const parser = new Parser({
   },
 });
 
-const DEFAULT_ITEMS_PER_SOURCE = 4;
-const MAX_ARTICLES = 40;
+const DEFAULT_ITEMS_PER_SOURCE = 6;
+const MAX_ARTICLES = 64;
 
-export async function fetchLatestArticles(): Promise<FeedArticle[]> {
+type FetchLatestArticlesOptions = {
+  limit?: number;
+  offset?: number;
+};
+
+export async function fetchLatestArticles({
+  limit,
+  offset = 0,
+}: FetchLatestArticlesOptions = {}): Promise<{
+  articles: FeedArticle[];
+  hasMore: boolean;
+}> {
   const feedPromises = newsSources.map(async (source) => {
     try {
       const feed = await parser.parseURL(source.feedUrl);
@@ -39,15 +50,29 @@ export async function fetchLatestArticles(): Promise<FeedArticle[]> {
     }
   });
 
-  const articles = (await Promise.all(feedPromises)).flat();
+  const allArticles = (await Promise.all(feedPromises)).flat();
 
-  articles.sort((a, b) => {
+  allArticles.sort((a, b) => {
     const aDate = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
     const bDate = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
     return bDate - aDate;
   });
 
-  return articles.slice(0, MAX_ARTICLES);
+  const safeLimit =
+    typeof limit === "number" && Number.isFinite(limit) && limit > 0
+      ? Math.floor(limit)
+      : undefined;
+
+  const bounded = allArticles.slice(0, MAX_ARTICLES);
+  const safeOffset = Number.isFinite(offset) ? offset : 0;
+  const start = Math.max(safeOffset, 0);
+  const end =
+    safeLimit ? Math.min(start + safeLimit, bounded.length) : bounded.length;
+
+  const slice = bounded.slice(start, end);
+  const hasMore = end < bounded.length;
+
+  return { articles: slice, hasMore };
 }
 
 type RawParserItem = {
