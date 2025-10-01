@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const offset = parseSearchParam(url.searchParams.get("offset"));
 
   try {
-    const { articles, hasMore, lastFetchedAt, total } = fetchLatestArticles({
+    const { articles, hasMore, lastFetchedAt, total } = await fetchLatestArticles({
       limit,
       offset,
     });

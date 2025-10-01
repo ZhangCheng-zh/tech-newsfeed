@@ -66,21 +66,23 @@ export async function refreshArticleStore(): Promise<{
 }> {
   const articles = await collectFeedArticles();
   const timestamp = new Date().toISOString();
-  replaceArticles(articles, timestamp);
+  await replaceArticles(articles, timestamp);
   return { count: articles.length, fetchedAt: timestamp };
 }
 
-export function fetchLatestArticles({
+export async function fetchLatestArticles({
   limit,
   offset = 0,
-}: FetchLatestArticlesOptions = {}): {
+}: FetchLatestArticlesOptions = {}): Promise<{
   articles: FeedArticle[];
   hasMore: boolean;
   lastFetchedAt: string | null;
   total: number;
-} {
-  const { articles, hasMore, total } = getArticlesPage({ limit, offset });
-  const lastFetchedAt = getLastFetchedAt();
+}> {
+  const [{ articles, hasMore, total }, lastFetchedAt] = await Promise.all([
+    getArticlesPage({ limit, offset }),
+    getLastFetchedAt(),
+  ]);
 
   return {
     articles,
