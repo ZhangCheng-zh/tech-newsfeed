@@ -14,14 +14,29 @@ export function ArticleGrid({ articles }: ArticleGridProps) {
       {articles.map((article) => (
         <ArticleCard
           key={article.id}
-          article={{ ...article, sourceTitle: SOURCE_MAP[article.sourceId] }}
+          article={{
+            ...article,
+            sourceTitle: SOURCE_META[article.sourceId]?.title,
+            sourceLogo: SOURCE_META[article.sourceId]?.logoUrl,
+          }}
         />
       ))}
     </section>
   );
 }
 
-const SOURCE_MAP = newsSources.reduce<Record<string, string>>((acc, source) => {
-  acc[source.id] = source.title;
-  return acc;
-}, {});
+type SourceMeta = {
+  title: string;
+  logoUrl?: string;
+};
+
+const SOURCE_META = newsSources.reduce<Record<string, SourceMeta>>(
+  (acc, source) => {
+    acc[source.id] = {
+      title: source.title,
+      logoUrl: source.logoUrl,
+    };
+    return acc;
+  },
+  {}
+);
