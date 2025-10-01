@@ -25,14 +25,19 @@ export function NewsFeedClient({
   const [lastFetchedAt, setLastFetchedAt] = useState(initialLastFetchedAt);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorAction, setErrorAction] = useState<"loadMore" | "refresh" | null>(
+    null
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) {
+    if (loadingMore || !hasMore || refreshing) {
       return;
     }
 
     setLoadingMore(true);
     setError(null);
+    setErrorAction(null);
 
     try {
       const params = new URLSearchParams({
@@ -58,22 +63,74 @@ export function NewsFeedClient({
     } catch (err) {
       console.error("Failed to load more articles", err);
       setError("Couldn't load more stories. Please try again.");
+      setErrorAction("loadMore");
     } finally {
       setLoadingMore(false);
     }
-  }, [articles.length, hasMore, loadingMore, pageSize]);
+  }, [articles.length, hasMore, loadingMore, pageSize, refreshing]);
 
-  const handleFreshClick = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  const handleFreshClick = useCallback(async () => {
+    if (refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+    setError(null);
+    setErrorAction(null);
+
+    try {
+      const refreshResponse = await fetch("/api/refresh", {
+        method: "POST",
+      });
+
+      if (!refreshResponse.ok) {
+        throw new Error(`Refresh failed with status ${refreshResponse.status}`);
+      }
+
+      const params = new URLSearchParams({
+        offset: "0",
+        limit: String(pageSize),
+      });
+      const response = await fetch(`/api/articles?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`Articles fetch failed with status ${response.status}`);
+      }
+
+      const data: {
+        articles: FeedArticle[];
+        hasMore: boolean;
+        lastFetchedAt: string | null;
+        total: number;
+      } = await response.json();
+
+      setArticles(data.articles);
+      setHasMore(data.hasMore);
+      setLastFetchedAt(data.lastFetchedAt);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error("Failed to refresh articles", err);
+      setError("Couldn't refresh stories. Please try again.");
+      setErrorAction("refresh");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [pageSize, refreshing]);
 
   const handleRetry = useCallback(() => {
-    void handleLoadMore();
-  }, [handleLoadMore]);
+    if (errorAction === "loadMore") {
+      void handleLoadMore();
+      return;
+    }
+
+    if (errorAction === "refresh") {
+      void handleFreshClick();
+    }
+  }, [errorAction, handleFreshClick, handleLoadMore]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <NavigationBar onFreshClick={handleFreshClick} />
+      <NavigationBar onFreshClick={handleFreshClick} refreshing={refreshing} />
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
         {articles.length ? (

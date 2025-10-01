@@ -62,16 +62,24 @@ export function getArticles({ limit, offset }: PaginationOptions) {
     sql += " OFFSET @offset";
   }
 
-  const rows = db.prepare(sql).all({ limit: safeLimit, offset: safeOffset });
+  const rows = db.prepare(sql).all({ limit: safeLimit, offset: safeOffset }) as Array<{
+    id: string;
+    title: string;
+    snippet: string;
+    link: string;
+    imageUrl: string | null;
+    publishedAt: string | null;
+    sourceId: string;
+  }>;
 
   return rows.map((row) => ({
-    id: row.id as string,
-    title: row.title as string,
-    snippet: row.snippet as string,
-    link: row.link as string,
-    imageUrl: (row.imageUrl as string | null) ?? undefined,
-    publishedAt: (row.publishedAt as string | null) ?? undefined,
-    sourceId: row.sourceId as string,
+    id: row.id,
+    title: row.title,
+    snippet: row.snippet,
+    link: row.link,
+    imageUrl: row.imageUrl ?? undefined,
+    publishedAt: row.publishedAt ?? undefined,
+    sourceId: row.sourceId,
   })) satisfies FeedArticle[];
 }
 
