@@ -1,27 +1,27 @@
 "use client";
 
-import type { Article } from "@/data/articles";
+import type { FeedArticle } from "@/lib/fetch-articles";
 import { newsSources } from "@/data/news-sources";
 import { ArticleCard } from "./article-card";
 
 type ArticleGridProps = {
-  articles: Article[];
+  articles: FeedArticle[];
 };
 
 export function ArticleGrid({ articles }: ArticleGridProps) {
-  const sourceMap = newsSources.reduce<Record<string, string>>((acc, source) => {
-    acc[source.id] = source.title;
-    return acc;
-  }, {});
-
   return (
     <section className="grid gap-6 sm:grid-cols-2">
       {articles.map((article) => (
         <ArticleCard
           key={article.id}
-          article={{ ...article, sourceTitle: sourceMap[article.sourceId] }}
+          article={{ ...article, sourceTitle: SOURCE_MAP[article.sourceId] }}
         />
       ))}
     </section>
   );
 }
+
+const SOURCE_MAP = newsSources.reduce<Record<string, string>>((acc, source) => {
+  acc[source.id] = source.title;
+  return acc;
+}, {});
