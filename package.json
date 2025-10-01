@@ -10,7 +10,7 @@
     "refresh-feeds": "tsx scripts/refresh-feeds.ts"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.10.0",
+    "@prisma/client": "^5.20.0",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -25,6 +25,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
+    "prisma": "^5.20.0",
     "tsx": "^4.20.6",
     "typescript": "^5"
   }

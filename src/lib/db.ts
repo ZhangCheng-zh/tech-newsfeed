@@ -1,31 +1,11 @@
-import { sql } from "@vercel/postgres";
+import { PrismaClient } from "@prisma/client";
 
-let initialized = false;
-
-export async function initDb() {
-  if (initialized) {
-    return;
-  }
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS articles (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      snippet TEXT NOT NULL,
-      link TEXT NOT NULL,
-      image_url TEXT,
-      published_at TIMESTAMPTZ,
-      source_id TEXT NOT NULL,
-      fetched_at TIMESTAMPTZ NOT NULL
-    );
-  `;
-
-  await sql`
-    CREATE INDEX IF NOT EXISTS idx_articles_published_at
-    ON articles (published_at DESC NULLS LAST, id ASC);
-  `;
-
-  initialized = true;
+declare global {
+  var prisma: PrismaClient | undefined;
 }
 
-export { sql };
+export const prisma = globalThis.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prisma = prisma;
+}
