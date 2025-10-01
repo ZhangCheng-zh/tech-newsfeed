@@ -10,16 +10,19 @@ import { NavigationBar } from "./navigation-bar";
 type NewsFeedClientProps = {
   initialArticles: FeedArticle[];
   initialHasMore: boolean;
+  initialLastFetchedAt: string | null;
   pageSize: number;
 };
 
 export function NewsFeedClient({
   initialArticles,
   initialHasMore,
+  initialLastFetchedAt,
   pageSize,
 }: NewsFeedClientProps) {
   const [articles, setArticles] = useState(initialArticles);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [lastFetchedAt, setLastFetchedAt] = useState(initialLastFetchedAt);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,10 +45,16 @@ export function NewsFeedClient({
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const data: { articles: FeedArticle[]; hasMore: boolean } = await response.json();
+      const data: {
+        articles: FeedArticle[];
+        hasMore: boolean;
+        lastFetchedAt: string | null;
+        total: number;
+      } = await response.json();
 
       setArticles((prev) => [...prev, ...data.articles]);
       setHasMore(data.hasMore);
+      setLastFetchedAt(data.lastFetchedAt);
     } catch (err) {
       console.error("Failed to load more articles", err);
       setError("Couldn't load more stories. Please try again.");
@@ -67,7 +76,19 @@ export function NewsFeedClient({
       <NavigationBar onFreshClick={handleFreshClick} />
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
-        <ArticleGrid articles={articles} />
+        {articles.length ? (
+          <ArticleGrid articles={articles} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-500">
+            <p>No stories cached yet.</p>
+            <p className="mt-2">Run `npm run refresh-feeds` to populate the latest news.</p>
+          </div>
+        )}
+        {lastFetchedAt ? (
+          <p className="text-center text-xs text-slate-400">
+            Last updated {new Date(lastFetchedAt).toLocaleString()}
+          </p>
+        ) : null}
         {error ? (
           <div className="flex items-center justify-center">
             <button

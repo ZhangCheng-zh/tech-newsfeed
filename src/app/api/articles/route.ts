@@ -8,12 +8,12 @@ export async function GET(request: Request) {
   const offset = parseSearchParam(url.searchParams.get("offset"));
 
   try {
-    const { articles, hasMore } = await fetchLatestArticles({
+    const { articles, hasMore, lastFetchedAt, total } = fetchLatestArticles({
       limit,
       offset,
     });
 
-    return NextResponse.json({ articles, hasMore });
+    return NextResponse.json({ articles, hasMore, lastFetchedAt, total });
   } catch (error) {
     console.error("Failed to fetch latest articles", error);
     return NextResponse.json(

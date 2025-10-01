@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const INITIAL_LIMIT = 12;
 
 export default async function Home() {
-  const { articles, hasMore } = await fetchLatestArticles({
+  const { articles, hasMore, lastFetchedAt } = fetchLatestArticles({
     limit: INITIAL_LIMIT,
     offset: 0,
   });
@@ -16,6 +16,7 @@ export default async function Home() {
       initialArticles={articles}
       initialHasMore={hasMore}
       pageSize={INITIAL_LIMIT}
+      initialLastFetchedAt={lastFetchedAt}
     />
   );
 }

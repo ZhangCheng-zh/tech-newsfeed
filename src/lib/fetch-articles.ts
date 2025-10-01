@@ -1,6 +1,11 @@
 import Parser from "rss-parser";
 
 import { newsSources } from "@/data/news-sources";
+import {
+  getArticlesPage,
+  getLastFetchedAt,
+  replaceArticles,
+} from "./article-store";
 
 export type FeedArticle = {
   id: string;
@@ -29,13 +34,7 @@ type FetchLatestArticlesOptions = {
   offset?: number;
 };
 
-export async function fetchLatestArticles({
-  limit,
-  offset = 0,
-}: FetchLatestArticlesOptions = {}): Promise<{
-  articles: FeedArticle[];
-  hasMore: boolean;
-}> {
+export async function collectFeedArticles(): Promise<FeedArticle[]> {
   const feedPromises = newsSources.map(async (source) => {
     try {
       const feed = await parser.parseURL(source.feedUrl);
@@ -58,21 +57,37 @@ export async function fetchLatestArticles({
     return bDate - aDate;
   });
 
-  const safeLimit =
-    typeof limit === "number" && Number.isFinite(limit) && limit > 0
-      ? Math.floor(limit)
-      : undefined;
+  return allArticles.slice(0, MAX_ARTICLES);
+}
 
-  const bounded = allArticles.slice(0, MAX_ARTICLES);
-  const safeOffset = Number.isFinite(offset) ? offset : 0;
-  const start = Math.max(safeOffset, 0);
-  const end =
-    safeLimit ? Math.min(start + safeLimit, bounded.length) : bounded.length;
+export async function refreshArticleStore(): Promise<{
+  count: number;
+  fetchedAt: string;
+}> {
+  const articles = await collectFeedArticles();
+  const timestamp = new Date().toISOString();
+  replaceArticles(articles, timestamp);
+  return { count: articles.length, fetchedAt: timestamp };
+}
 
-  const slice = bounded.slice(start, end);
-  const hasMore = end < bounded.length;
+export function fetchLatestArticles({
+  limit,
+  offset = 0,
+}: FetchLatestArticlesOptions = {}): {
+  articles: FeedArticle[];
+  hasMore: boolean;
+  lastFetchedAt: string | null;
+  total: number;
+} {
+  const { articles, hasMore, total } = getArticlesPage({ limit, offset });
+  const lastFetchedAt = getLastFetchedAt();
 
-  return { articles: slice, hasMore };
+  return {
+    articles,
+    hasMore,
+    lastFetchedAt,
+    total,
+  };
 }
 
 type RawParserItem = {
