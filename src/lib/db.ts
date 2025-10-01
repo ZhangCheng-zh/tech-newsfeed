@@ -2,7 +2,8 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 
-const DB_PATH = path.join(process.cwd(), "data", "newsfeed.db");
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "newsfeed.db");
+const DB_PATH = process.env.NEWSFEED_DB_PATH ?? DEFAULT_DB_PATH;
 
 let db: Database.Database | null = null;
 
