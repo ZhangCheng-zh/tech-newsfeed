@@ -12,9 +12,9 @@ type ArticleRow = {
   snippet: string;
   link: string;
   image_url: string | null;
-  published_at: Date | null;
+  published_at: string | null;
   source_id: string;
-  fetched_at: Date;
+  fetched_at: string;
 };
 
 export async function replaceArticles(
@@ -44,9 +44,9 @@ export async function replaceArticles(
           ${article.snippet},
           ${article.link},
           ${article.imageUrl ?? null},
-          ${article.publishedAt ? new Date(article.publishedAt) : null},
+          ${article.publishedAt ? new Date(article.publishedAt).toISOString() : null},
           ${article.sourceId},
-          ${new Date(fetchedAt)}
+          ${new Date(fetchedAt).toISOString()}
         )
       `;
     }
@@ -79,25 +79,34 @@ export async function getArticlesPage({
       ? Math.floor(offset)
       : 0;
 
-  const limitFragment = safeLimit !== undefined ? sql`LIMIT ${safeLimit}` : sql``;
-  const offsetFragment = safeOffset > 0 ? sql`OFFSET ${safeOffset}` : sql``;
+  let selectQuery = `
+    SELECT
+      id,
+      title,
+      snippet,
+      link,
+      image_url,
+      published_at,
+      source_id,
+      fetched_at
+    FROM articles
+    ORDER BY (published_at IS NULL), published_at DESC, id ASC
+  `;
+
+  const params: Array<string | number> = [];
+
+  if (safeLimit !== undefined) {
+    params.push(safeLimit);
+    selectQuery += ` LIMIT $${params.length}`;
+  }
+
+  if (safeOffset > 0) {
+    params.push(safeOffset);
+    selectQuery += ` OFFSET $${params.length}`;
+  }
 
   const [rowsResult, countResult] = await Promise.all([
-    sql<ArticleRow>`
-      SELECT
-        id,
-        title,
-        snippet,
-        link,
-        image_url,
-        published_at,
-        source_id,
-        fetched_at
-      FROM articles
-      ORDER BY (published_at IS NULL), published_at DESC, id ASC
-      ${limitFragment}
-      ${offsetFragment}
-    `,
+    sql.query<ArticleRow>(selectQuery, params),
     sql<{ count: number }>`SELECT COUNT(*)::int AS count FROM articles`,
   ]);
 
@@ -107,7 +116,7 @@ export async function getArticlesPage({
     snippet: row.snippet,
     link: row.link,
     imageUrl: row.image_url ?? undefined,
-    publishedAt: row.published_at ? row.published_at.toISOString() : undefined,
+    publishedAt: row.published_at ? new Date(row.published_at).toISOString() : undefined,
     sourceId: row.source_id,
   }));
 
@@ -123,7 +132,7 @@ export async function getArticlesPage({
 
 export async function getLastFetchedAt(): Promise<string | null> {
   await initDb();
-  const result = await sql<{ fetched_at: Date }>`
+  const result = await sql<{ fetched_at: string }>`
     SELECT fetched_at
     FROM articles
     ORDER BY fetched_at DESC
@@ -131,5 +140,5 @@ export async function getLastFetchedAt(): Promise<string | null> {
   `;
 
   const fetchedAt = result.rows[0]?.fetched_at;
-  return fetchedAt ? fetchedAt.toISOString() : null;
+  return fetchedAt ? new Date(fetchedAt).toISOString() : null;
 }
