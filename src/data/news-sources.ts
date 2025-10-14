@@ -2,6 +2,8 @@ export type NewsSource = {
   id: string;
   title: string;
   feedUrl: string;
+  type?: "rss" | "youtube";
+  channelId?: string;
   description?: string;
   delivery?: string;
   logoUrl?: string;
@@ -11,11 +13,14 @@ const logo = (domain: string) => `https://logo.clearbit.com/${domain}?size=512`;
 
 export const newsSources: NewsSource[] = [
   {
-    id: "elon-musk-twitter",
-    title: "Elon Musk (@elonmusk) / Twitter",
-    feedUrl: "https://rss.app/feeds/2QGhEAkIMt9hrq1z.xml",
-    delivery: "Email",
-    logoUrl: logo("x.com"),
+    id: "bytebytego-youtube",
+    title: "ByteByteGo (YouTube)",
+    feedUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=UCZgt6AzoyjslHTC9dz0UoTw",
+    type: "youtube",
+    channelId: "UCZgt6AzoyjslHTC9dz0UoTw",
+    description: "High-quality system design walkthroughs and coding interview prep from ByteByteGo.",
+    delivery: "YouTube",
+    logoUrl: logo("youtube.com"),
   },
   {
     id: "yahoo-engineering",
@@ -116,11 +121,11 @@ export const newsSources: NewsSource[] = [
   },
   {
     id: "nextdoor-engineering",
-    title: "Nextdoor Engineering - Medium",
-    feedUrl: "https://engblog.nextdoor.com/feed",
+    title: "Nextdoor Engineering",
+    feedUrl: "https://medium.com/feed/nextdoor-engineering",
     description:
-      "Stories from the team building Nextdoor, the neighborhood hub for trusted connections.",
-    delivery: "Email",
+      "Stories from the team building Nextdoor, the neighborhood hub for trusted connections. Hosted on Medium.",
+    delivery: "RSS",
     logoUrl: logo("nextdoor.com"),
   },
   {
@@ -143,8 +148,8 @@ export const newsSources: NewsSource[] = [
   {
     id: "shopify-engineering",
     title: "Shopify Engineering",
-    feedUrl: "https://shopify.engineering/blog.atom",
-    delivery: "Email",
+    feedUrl: "https://shopify.engineering/blogs/engineering.atom",
+    delivery: "RSS",
     logoUrl: logo("shopify.com"),
   },
 ];

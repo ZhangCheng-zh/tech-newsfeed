@@ -28,6 +28,10 @@ export async function replaceArticles(
           : null,
         sourceId: article.sourceId,
         fetchedAt: new Date(fetchedAt),
+        mediaType: article.mediaType,
+        videoId: article.videoId ?? null,
+        channelId: article.channelId ?? null,
+        durationSeconds: article.durationSeconds ?? null,
       })),
     });
   });
@@ -75,6 +79,10 @@ export async function getArticlesPage({
     imageUrl: article.imageUrl ?? undefined,
     publishedAt: article.publishedAt?.toISOString(),
     sourceId: article.sourceId,
+    mediaType: article.mediaType === "video" ? "video" : "article",
+    videoId: article.videoId ?? undefined,
+    channelId: article.channelId ?? undefined,
+    durationSeconds: article.durationSeconds ?? undefined,
   }));
 
   const hasMore = safeOffset + mapped.length < total;

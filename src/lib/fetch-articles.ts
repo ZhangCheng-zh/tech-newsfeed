@@ -15,13 +15,32 @@ export type FeedArticle = {
   imageUrl?: string;
   publishedAt?: string;
   sourceId: string;
+  mediaType: "article" | "video";
+  videoId?: string;
+  channelId?: string;
+  durationSeconds?: number;
 };
 
 const parser = new Parser({
+  requestOptions: {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+      Accept:
+        "application/atom+xml,application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+    timeout: 15000,
+  },
   customFields: {
     item: [
       ["media:content", "mediaContent", { keepArray: true }],
       ["content:encoded", "contentEncoded"],
+      ["media:group", "mediaGroup"],
+      ["media:description", "mediaDescription"],
+      ["media:thumbnail", "mediaThumbnails", { keepArray: true }],
+      ["yt:videoId", "ytVideoId"],
+      ["yt:channelId", "ytChannelId"],
+      ["yt:duration", "ytDuration"],
     ],
   },
 });
@@ -41,7 +60,11 @@ export async function collectFeedArticles(): Promise<FeedArticle[]> {
       const items = feed.items?.slice(0, DEFAULT_ITEMS_PER_SOURCE) ?? [];
 
       return items
-        .map((item, index) => normaliseItem(item, source.id, index))
+        .map((item, index) =>
+          source.type === "youtube"
+            ? normaliseYoutubeItem(item, source.id, index, source.channelId)
+            : normaliseItem(item, source.id, index)
+        )
         .filter((item): item is FeedArticle => Boolean(item));
     } catch (error) {
       console.warn(`Failed to fetch feed for ${source.title}:`, error);
@@ -104,6 +127,18 @@ type RawParserItem = {
   pubDate?: string;
   enclosure?: { url?: string };
   mediaContent?: Array<{ url?: string } | { $?: { url?: string } }>;
+  mediaGroup?: {
+    "media:thumbnail"?: Array<{ $?: { url?: string } }>;
+    "yt:videoId"?: string[];
+    "yt:channelId"?: string[];
+    "yt:duration"?: Array<{ $?: { seconds?: string } }>;
+    "media:description"?: string[];
+  };
+  mediaDescription?: string;
+  mediaThumbnails?: Array<{ url?: string } | { $?: { url?: string } }>;
+  ytVideoId?: string;
+  ytChannelId?: string;
+  ytDuration?: { $?: { seconds?: string } } | string;
 };
 
 function normaliseItem(
@@ -130,11 +165,53 @@ function normaliseItem(
     imageUrl,
     publishedAt,
     sourceId,
+    mediaType: "article",
+  };
+}
+
+function normaliseYoutubeItem(
+  item: RawParserItem,
+  sourceId: string,
+  index: number,
+  fallbackChannelId?: string
+): FeedArticle | null {
+  const videoId = extractYoutubeVideoId(item);
+  const link =
+    item.link?.trim() ||
+    (videoId ? `https://www.youtube.com/watch?v=${videoId}` : undefined);
+  const title = item.title?.trim();
+
+  if (!title || !link) {
+    return null;
+  }
+
+  const snippet = buildSnippet(item);
+  const imageUrl = extractYoutubeImageUrl(item) ?? extractImageUrl(item);
+  const publishedAt = item.isoDate || item.pubDate || undefined;
+  const channelId = item.ytChannelId || extractYoutubeChannelId(item) || fallbackChannelId;
+  const durationSeconds = extractYoutubeDuration(item);
+
+  return {
+    id: videoId || item.guid || `${sourceId}-${index}`,
+    title,
+    snippet,
+    link,
+    imageUrl,
+    publishedAt,
+    sourceId,
+    mediaType: "video",
+    videoId,
+    channelId,
+    durationSeconds,
   };
 }
 
 function buildSnippet(item: RawParserItem): string {
-  const fromSnippet = item.contentSnippet || item.summary;
+  const fromSnippet =
+    item.contentSnippet ||
+    item.summary ||
+    item.mediaDescription ||
+    item.mediaGroup?.["media:description"]?.[0];
   if (fromSnippet) {
     return truncateText(truncateWhitespace(fromSnippet));
   }
@@ -187,4 +264,88 @@ function extractImageUrl(item: RawParserItem): string | undefined {
 
   const match = html.match(/<img[^>]+src=["']([^"'>]+)["']/i);
   return match ? match[1] : undefined;
+}
+
+function extractYoutubeImageUrl(item: RawParserItem): string | undefined {
+  const thumbnails: Array<{ url?: string } | { $?: { url?: string } } | undefined> = [
+    ...(item.mediaThumbnails ?? []),
+    ...(item.mediaGroup?.["media:thumbnail"] ?? []),
+  ];
+
+  for (const media of thumbnails) {
+    if (!media) {
+      continue;
+    }
+
+    if (typeof media === "object" && "url" in media && media.url) {
+      return media.url;
+    }
+
+    if (
+      typeof media === "object" &&
+      "$" in media &&
+      media.$ &&
+      media.$.url
+    ) {
+      return media.$.url;
+    }
+  }
+
+  return undefined;
+}
+
+function extractYoutubeVideoId(item: RawParserItem): string | undefined {
+  if (item.ytVideoId) {
+    return item.ytVideoId;
+  }
+
+  const fromGroup = item.mediaGroup?.["yt:videoId"]?.[0];
+  if (typeof fromGroup === "string" && fromGroup.trim()) {
+    return fromGroup.trim();
+  }
+
+  if (item.guid?.startsWith("yt:video:")) {
+    return item.guid.replace("yt:video:", "");
+  }
+
+  const linkMatch = item.link?.match(/v=([^&]+)/);
+  if (linkMatch) {
+    return linkMatch[1];
+  }
+
+  return undefined;
+}
+
+function extractYoutubeChannelId(item: RawParserItem): string | undefined {
+  if (item.ytChannelId) {
+    return item.ytChannelId;
+  }
+
+  const fromGroup = item.mediaGroup?.["yt:channelId"]?.[0];
+  if (typeof fromGroup === "string" && fromGroup.trim()) {
+    return fromGroup.trim();
+  }
+
+  return undefined;
+}
+
+function extractYoutubeDuration(item: RawParserItem): number | undefined {
+  if (typeof item.ytDuration === "string") {
+    const parsed = Number.parseInt(item.ytDuration, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
+  const fromItem = item.ytDuration?.$?.seconds;
+  if (fromItem) {
+    const parsed = Number.parseInt(fromItem, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
+  const fromGroup = item.mediaGroup?.["yt:duration"]?.[0]?.$?.seconds;
+  if (fromGroup) {
+    const parsed = Number.parseInt(fromGroup, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
+  return undefined;
 }

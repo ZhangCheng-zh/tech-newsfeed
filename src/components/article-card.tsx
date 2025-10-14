@@ -57,6 +57,11 @@ export function ArticleCard({ article }: ArticleCardProps) {
           isFallback ? "bg-slate-50" : "bg-slate-100"
         } flex items-center justify-center`}
       >
+        {article.mediaType === "video" ? (
+          <span className="absolute left-3 top-3 rounded-full bg-red-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm">
+            Video
+          </span>
+        ) : null}
         <img
           src={imgSrc}
           alt={article.title}

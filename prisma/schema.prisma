@@ -16,6 +16,10 @@ model Article {
   publishedAt DateTime? @map("published_at")
   sourceId    String   @map("source_id")
   fetchedAt   DateTime @map("fetched_at")
+  mediaType   String   @map("media_type") @default("article")
+  videoId     String?  @map("video_id")
+  channelId   String?  @map("channel_id")
+  durationSeconds Int? @map("duration_seconds")
 
   @@map("articles")
   @@index([publishedAt(sort: Desc)], map: "idx_articles_published_at")

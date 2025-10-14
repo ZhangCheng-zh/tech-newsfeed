@@ -1,10 +1,10 @@
 # System Design Doc – NewsFeed App
 
 ## 1. Problem Statement
-Deliver a modern newsfeed web app that aggregates curated RSS sources into a clean UI, supports manual refreshes, and paginates cached stories without overloading upstream feeds.
+Deliver a modern newsfeed web app that aggregates curated RSS and YouTube sources into a clean UI, supports manual refreshes, and paginates cached stories without overloading upstream feeds.
 
 ## 2. Goals
-- Aggregate 15+ tech RSS feeds on demand, deduplicate, and persist results.
+- Aggregate 15+ tech RSS feeds plus curated YouTube channels on demand, deduplicate, and persist results.
 - Serve a responsive, minimal UI with navigation, article cards, and smooth pagination.
 - Allow manual “Fresh” refresh that re-crawls sources, overwriting the cache.
 - Deploy on Vercel with custom domain support and daily/cron refresh via HTTP.
@@ -39,7 +39,7 @@ graph TD
 
 - **Data Aggregation**
   - `src/lib/fetch-articles.ts`:
-    - `collectFeedArticles()` requests each RSS URL using `rss-parser`, normalises results, truncates to 64 articles.
+    - `collectFeedArticles()` requests each RSS/YouTube feed using `rss-parser`, normalises results (articles vs. videos), truncates to 64 entries.
     - `refreshArticleStore()` overwrites the DB with new records via Prisma.
     - `fetchLatestArticles()` pages cached rows through Prisma for API/SSR responses.
 
@@ -68,14 +68,18 @@ graph TD
 ## 6. Data Model (Prisma Schema)
 ```prisma
 model Article {
-  id          String   @id
-  title       String
-  snippet     String
-  link        String
-  imageUrl    String?  @map("image_url")
-  publishedAt DateTime? @map("published_at")
-  sourceId    String   @map("source_id")
-  fetchedAt   DateTime @map("fetched_at")
+  id              String   @id
+  title           String
+  snippet         String
+  link            String
+  imageUrl        String?  @map("image_url")
+  publishedAt     DateTime? @map("published_at")
+  sourceId        String   @map("source_id")
+  fetchedAt       DateTime @map("fetched_at")
+  mediaType       String   @map("media_type") @default("article")
+  videoId         String?  @map("video_id")
+  channelId       String?  @map("channel_id")
+  durationSeconds Int?     @map("duration_seconds")
 
   @@map("articles")
   @@index([publishedAt(sort: Desc)], map: "idx_articles_published_at")
@@ -87,12 +91,13 @@ model Article {
   - Response `{ count: number, fetchedAt: string }` or `{ error }` with 500.
 - `GET /api/articles?offset=0&limit=12`
   - Response `{ articles: FeedArticle[], hasMore: boolean, lastFetchedAt: string|null, total: number }`.
-- `FeedArticle`: `{ id, title, snippet, link, imageUrl?, publishedAt?, sourceId }`.
+- `FeedArticle`: `{ id, title, snippet, link, imageUrl?, publishedAt?, sourceId, mediaType, videoId?, channelId?, durationSeconds? }`.
 
 ## 8. Scaling & Performance Considerations
 - Data volume capped at 64 articles per refresh; low write load.
 - Postgres handles read load; Prisma pooling via Accelerate or pgBouncer if needed.
 - Refresh is heavy (RSS crawl) but user-driven or cron-based; run rate-limited.
+- YouTube ingestion uses channel RSS feeds (15-minute cache) to avoid API quotas; store channel/video metadata for future filtering.
 - Future: incremental refresh per source, or queue-based workers if cadence increases.
 
 ## 9. Potential Improvements & Trade-offs
