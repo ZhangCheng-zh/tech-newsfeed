@@ -51,46 +51,48 @@ export function ArticleCard({ article }: ArticleCardProps) {
   };
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div
-        className={`relative aspect-[16/9] overflow-hidden ${
-          isFallback ? "bg-slate-50" : "bg-slate-100"
-        } flex items-center justify-center`}
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md focus-within:shadow-md">
+      <a
+        href={article.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex h-full flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
       >
-        {article.mediaType === "video" ? (
-          <span className="absolute left-3 top-3 rounded-full bg-red-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm">
-            Video
-          </span>
-        ) : null}
-        <img
-          src={imgSrc}
-          alt={article.title}
-          loading="lazy"
-          className={`h-full w-full transition-transform duration-500 group-hover:scale-105 ${
-            isFallback ? "object-contain p-6" : "object-cover"
-          }`}
-          onError={handleImageError}
-        />
-      </div>
-      <div className="flex flex-col gap-3 p-6">
-        {article.sourceTitle ? (
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {article.sourceTitle}
-          </span>
-        ) : null}
-        <a
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xl font-semibold text-slate-900 transition-colors hover:text-slate-600"
+        <div
+          className={`relative aspect-[16/9] overflow-hidden ${
+            isFallback ? "bg-slate-50" : "bg-slate-100"
+          } flex items-center justify-center`}
         >
-          {article.title}
-        </a>
-        <p className="text-sm leading-relaxed text-slate-600">{article.snippet}</p>
-        {formattedDate ? (
-          <span className="text-xs text-slate-400">{formattedDate}</span>
-        ) : null}
-      </div>
+          {article.mediaType === "video" ? (
+            <span className="absolute left-3 top-3 rounded-full bg-red-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm">
+              Video
+            </span>
+          ) : null}
+          <img
+            src={imgSrc}
+            alt={article.title}
+            loading="lazy"
+            className={`h-full w-full transition-transform duration-500 group-hover:scale-105 ${
+              isFallback ? "object-contain p-6" : "object-cover"
+            }`}
+            onError={handleImageError}
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-3 p-6 text-left">
+          {article.sourceTitle ? (
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {article.sourceTitle}
+            </span>
+          ) : null}
+          <h2 className="text-xl font-semibold text-slate-900 transition-colors group-hover:text-slate-600">
+            {article.title}
+          </h2>
+          <p className="text-sm leading-relaxed text-slate-600">{article.snippet}</p>
+          {formattedDate ? (
+            <span className="mt-auto text-xs text-slate-400">{formattedDate}</span>
+          ) : null}
+        </div>
+      </a>
     </article>
   );
 }
