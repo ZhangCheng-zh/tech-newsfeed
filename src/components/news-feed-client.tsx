@@ -6,6 +6,7 @@ import type { FeedArticle } from "@/lib/fetch-articles";
 import { ArticleGrid } from "./article-grid";
 import { LoadMoreSentinel } from "./load-more-sentinel";
 import { NavigationBar } from "./navigation-bar";
+import { SourceListModal } from "./source-list-modal";
 
 type NewsFeedClientProps = {
   initialArticles: FeedArticle[];
@@ -29,6 +30,7 @@ export function NewsFeedClient({
     null
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [showSources, setShowSources] = useState(false);
 
   const handleLoadMore = useCallback(async () => {
     if (loadingMore || !hasMore || refreshing) {
@@ -130,7 +132,11 @@ export function NewsFeedClient({
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <NavigationBar onFreshClick={handleFreshClick} refreshing={refreshing} />
+      <NavigationBar
+        onFreshClick={handleFreshClick}
+        refreshing={refreshing}
+        onViewSources={() => setShowSources(true)}
+      />
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
         {articles.length ? (
@@ -163,6 +169,8 @@ export function NewsFeedClient({
           onLoadMore={handleLoadMore}
         />
       </main>
+
+      <SourceListModal open={showSources} onClose={() => setShowSources(false)} />
     </div>
   );
 }

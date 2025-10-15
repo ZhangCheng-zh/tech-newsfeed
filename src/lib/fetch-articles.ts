@@ -52,7 +52,12 @@ export async function collectFeedArticles(): Promise<FeedArticle[]> {
       return items
         .map((item, index) =>
           source.type === "youtube"
-            ? normaliseYoutubeItem(item, source.id, index, source.channelId)
+            ? normaliseYoutubeItem(
+                item,
+                source.id,
+                index,
+                source.channelId
+              )
             : normaliseItem(item, source.id, index)
         )
         .filter((item): item is FeedArticle => Boolean(item));
@@ -92,17 +97,27 @@ export async function fetchLatestArticles({
   lastFetchedAt: string | null;
   total: number;
 }> {
-  const [{ articles, hasMore, total }, lastFetchedAt] = await Promise.all([
-    getArticlesPage({ limit, offset }),
-    getLastFetchedAt(),
-  ]);
+  try {
+    const [{ articles, hasMore, total }, lastFetchedAt] = await Promise.all([
+      getArticlesPage({ limit, offset }),
+      getLastFetchedAt(),
+    ]);
 
-  return {
-    articles,
-    hasMore,
-    lastFetchedAt,
-    total,
-  };
+    return {
+      articles,
+      hasMore,
+      lastFetchedAt,
+      total,
+    };
+  } catch (error) {
+    console.error("Failed to fetch latest articles from database", error);
+    return {
+      articles: [],
+      hasMore: false,
+      lastFetchedAt: null,
+      total: 0,
+    };
+  }
 }
 
 function normaliseItem(

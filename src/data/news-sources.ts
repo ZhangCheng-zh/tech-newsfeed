@@ -9,7 +9,8 @@ export type NewsSource = {
   logoUrl?: string;
 };
 
-const logo = (domain: string) => `https://logo.clearbit.com/${domain}?size=512`;
+const logo = (domain: string, size = 256) =>
+  `https://logo.clearbit.com/${domain}?size=${size}`;
 
 export const newsSources: NewsSource[] = [
   {
@@ -20,7 +21,7 @@ export const newsSources: NewsSource[] = [
     channelId: "UCZgt6AzoyjslHTC9dz0UoTw",
     description: "High-quality system design walkthroughs and coding interview prep from ByteByteGo.",
     delivery: "YouTube",
-    logoUrl: logo("youtube.com"),
+    logoUrl: "https://yt3.googleusercontent.com/ZDRUyBUwc2WXZzvNKP9VS9myI6Mg2puQLaWyp4hibRu-owlsasZ3DVNGSQJwzO1IU-tqoMiGgdc=s160-c-k-c0x00ffffff-no-rj",
   },
   {
     id: "yahoo-engineering",
@@ -93,7 +94,7 @@ export const newsSources: NewsSource[] = [
     feedUrl: "https://developers.googleblog.com/feeds/posts/default/",
     description: "Updates on changes and additions to the Google Developers Blog.",
     delivery: "Email",
-    logoUrl: logo("google.com"),
+    logoUrl: "/logos/google-developers.svg",
   },
   {
     id: "high-scalability",
